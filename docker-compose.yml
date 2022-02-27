@@ -2,7 +2,7 @@ version: "3"
 
 services:
     flask:
-        build: ./server/flask
+        build: ./src
         container_name: flask
         restart: always
         environment:
