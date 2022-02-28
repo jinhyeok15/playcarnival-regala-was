@@ -29,7 +29,6 @@ async def findById(model, id, cursor=None):
     cursor.execute(q)
     return cursor.fetchone()
 
-
 @connect
 async def find(model, attr=(), filter={}, only=False, cursor=None):
     q = "SELECT * FROM {} ".format(_get_table_name(model.__name__))
@@ -58,6 +57,13 @@ class SQLSession:
         q = 'UPDATE {} SET '.format(_get_table_name(model.__name__))
         q += ', '.join([f"{k}={v}" for k, v in model.data.items()])+"\n"
         q += 'WHERE '+', '.join([f"{k}={v}" for k, v in filter.items()])+";"
+        self.cur.execute(q)
+    
+    async def create(self, model: object):
+        q = 'INSERT INTO {}'.format(_get_table_name(model.__name__))
+        q += '('+', '.join([name for name in model.data.keys()])+')\n'
+        q += 'VALUES ('+', '.join([value for value in model.data.values()])+');'
+        self.cur.execute(q)
 
     def commit(self):
         self.db.commit()
