@@ -27,7 +27,7 @@ async def findById(model, id, cursor=None):
         SELECT * FROM {} WHERE {}={};
     '''.format(_get_table_name(model.__name__), id_attr[0], id)
     cursor.execute(q)
-    return cursor.fetchone()
+    return model.set_data(cursor.fetchone())
 
 @connect
 async def find(model, filter, only=False, cursor=None):
@@ -36,8 +36,8 @@ async def find(model, filter, only=False, cursor=None):
         q += 'WHERE '+', '.join([f"{k}={v}" for k, v in filter.items()])+";"
     cursor.execute(q)
     if only:
-        return cursor.fetchone()
-    return cursor.fetchall()
+        return model.set_data(cursor.fetchone())
+    return [model.set_data(x) for x in cursor.fetchall()]
 
 @connect
 async def update(self, model: object, filter, cursor=None):

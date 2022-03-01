@@ -29,3 +29,11 @@ class Model:
     
     def get(self, name):
         return self.data[name]
+    
+    def set_data(self, data):
+        for name in self.__names__:
+            if not data[name]:
+                raise KeyError("Data key is not matched with model columns")
+            column = eval(f'self.{name})')
+            column.put(data[name])
+        self.data = data
