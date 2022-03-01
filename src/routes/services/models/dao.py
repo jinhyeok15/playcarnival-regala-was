@@ -12,10 +12,10 @@ db = pymysql.connect(
 )
 
 def connect(func):
-    def wrapper(model: object, arg):
+    def wrapper(model: object, *args, **kwargs):
         try:
             with db.cursor(pymysql.cursors.DictCursor) as cur:
-                func(model, arg, cursor=cur)
+                func(model, *args, cursor=cur, **kwargs)
         finally:
             cur.close()
     return wrapper
@@ -30,16 +30,28 @@ async def findById(model, id, cursor=None):
     return cursor.fetchone()
 
 @connect
-async def find(model, attr=(), filter={}, only=False, cursor=None):
+async def find(model, filter, only=False, cursor=None):
     q = "SELECT * FROM {} ".format(_get_table_name(model.__name__))
-    if attr is not ():
-        q += 'WHERE {}={};'.format(attr[0], attr[1])
-    elif filter is not {}:
+    if filter:
         q += 'WHERE '+', '.join([f"{k}={v}" for k, v in filter.items()])+";"
     cursor.execute(q)
     if only:
         return cursor.fetchone()
     return cursor.fetchall()
+
+@connect
+async def update(self, model: object, filter, cursor=None):
+    q = 'UPDATE {} SET '.format(_get_table_name(model.__name__))
+    q += ', '.join([f"{k}={v}" for k, v in model.data.items()])+"\n"
+    q += 'WHERE '+', '.join([f"{k}={v}" for k, v in filter.items()])+";"
+    cursor.execute(q)
+
+@connect
+async def create(self, model: object, cursor=None):
+    q = 'INSERT INTO {}'.format(_get_table_name(model.__name__))
+    q += '('+', '.join([name for name in model.data.keys()])+')\n'
+    q += 'VALUES ('+', '.join([value for value in model.data.values()])+');'
+    cursor.execute(q)
 
 class SQLSession:
     def __init__(self):

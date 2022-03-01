@@ -1,4 +1,4 @@
-import config
+import routes.services.models.config as config
 import redis
 import pymysql
 

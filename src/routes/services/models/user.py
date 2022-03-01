@@ -1,4 +1,4 @@
-from model import Model
+from models import Model
 
 class User(Model):
     user_id = Model.Column('user_idx', int, ID=True)
