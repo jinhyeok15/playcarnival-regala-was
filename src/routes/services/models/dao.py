@@ -1,8 +1,5 @@
 from . import config
 import pymysql
-from .record import *
-from .user import *
-
 
 db_config = config.db
 db = pymysql.connect(
@@ -18,48 +15,45 @@ def connection(func):
     def wrapper(model, *args, **kwargs):
         try:
             with db.cursor(pymysql.cursors.DictCursor) as cur:
-                obj = func(model, *args, cursor=cur, **kwargs)
+                return func(model, *args, cursor=cur, **kwargs)
         finally:
             cur.close()
-        return obj
     return wrapper
 
 
 @connection
 def findById(model, id, cursor=None):
-    print(model())
     id_attr = _get_id_attr(model, model.__names__)
     q = '''
         SELECT * FROM {} WHERE {}={};
     '''.format(_get_table_name(model.__name__), id_attr[0], id if isinstance(id, int) else f"'{id}'")
 
     cursor.execute(q)
-    data = cursor.fetchone()
     try:
-        ins = model().set_instance(data)
-        return ins
+        return cursor.fetchone()
     except:
         return None
 
 
 @connection
-def find(model, filter, only=False, cursor=None):
+def find(model, filter, cursor=None):
     q = "SELECT * FROM {} ".format(_get_table_name(model.__name__))
     if filter:
         q += 'WHERE '+', '.join([f"{k}={v}" if isinstance(v, int) else f"{k}='{v}'" for k, v in filter.items()])+";"
     cursor.execute(q)
-    if only:
-        ins = model().set_instance(cursor.fetchone())
-        return ins
-    result=[]
-    for x in cursor.fetchall():
-        ins = model().set_instance(x)
-        result.append(ins)
-    return result
+    return cursor.fetchall()
 
 
 @connection
-def update(model: object, filter, cursor=None):
+def findOne(model, filter, cursor=None):
+    q = "SELECT * FROM {} ".format(_get_table_name(model.__name__))
+    q += 'WHERE '+', '.join([f"{k}={v}" if isinstance(v, int) else f"{k}='{v}'" for k, v in filter.items()])+';'
+    cursor.execute(q)
+    return cursor.fetchone()
+
+
+@connection
+def update(model, filter, cursor=None):
     q = 'UPDATE {} SET '.format(_get_table_name(model.__name__))
     q += ', '.join([f"{k}={v}" if isinstance(v, int) else f"{k}='{v}'" for k, v in model.data.items()])+"\n"
     q += 'WHERE '+', '.join([f"{k}={v}" if isinstance(v, int) else f"{k}='{v}'" for k, v in filter.items()])+";"
@@ -67,7 +61,7 @@ def update(model: object, filter, cursor=None):
 
 
 @connection
-def create(model: object, cursor=None):
+def create(model, cursor=None):
     q = 'INSERT INTO {}'.format(_get_table_name(model.__name__))
     q += '('+', '.join([name for name in model.data.keys()])+')\n'
     q += 'VALUES ('+', '.join([value if isinstance(value, int) else f"'{value}'" for value in model.data.values()])+');'
@@ -86,13 +80,13 @@ class SQLSession:
         )
         self.cur = self.db.cursor(pymysql.cursors.DictCursor)
     
-    async def update(self, model: object, filter):
+    async def update(self, model, filter):
         q = 'UPDATE {} SET '.format(_get_table_name(model.__name__))
         q += ', '.join([f"{k}={v}" if isinstance(v, int) else f"{k}='{v}'" for k, v in model.data.items()])+"\n"
         q += 'WHERE '+', '.join([f"{k}={v}" if isinstance(v, int) else f"{k}='{v}'" for k, v in filter.items()])+";"
         self.cur.execute(q)
     
-    async def create(self, model: object):
+    async def create(self, model):
         q = 'INSERT INTO {}'.format(_get_table_name(model.__name__))
         q += '('+', '.join([name for name in model.data.keys()])+')\n'
         q += 'VALUES ('+', '.join([value if isinstance(value, int) else f"'{value}'" for value in model.data.values()])+');'

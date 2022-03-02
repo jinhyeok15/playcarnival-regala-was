@@ -8,48 +8,47 @@ import asyncio
 
 red = getRedis()
 
-async def record_regala(dto, res):
-    user_id = dto.user_id
-    user = findById(User, user_id)
-
+async def record_regala(req, res, interface):
+    user_id = req.user_id
+    user = User.find_by_id(user_id)
     if not user:
-        return dto.response(403, "NOT_VALID_ACCESS")
-    res.add(user.user_id)
+        return res.response(403, "NOT_VALID_ACCESS")
     
-    equipment_id = dto.equipment_id
-    equipment = findById(Equipment, equipment_id)
-    
+    equipment_id = req.equipment_id
+    equipment = Equipment.find_by_id(equipment_id)
     if not equipment:
-        return dto.response(404, "UNREGISTERED_EQUIPMENT")
-    res.add(equipment.equipment_id)
-    
-    stadium = findById(Stadium, equipment.stadium_id.get())
-    res.add(stadium.name)
+        return res.response(404, "UNREGISTERED_EQUIPMENT")
 
-    red.publish('regalaData', json.dumps(res.data))
+    stadium = Stadium.find_by_id(equipment.get("stadium_id"))
+    
+    res.add(interface({"user_id": user_id}))
+    res.add(interface({"equipment_id": equipment_id}))
+    res.add(interface({"stadium_name": stadium.get("name")}))
+
+    red.publish('regalaData', json.dumps(res.res_data))
 
     sess = SQLSession()
     await asyncio.gather(
-        sess.update(Equipment({"service_state": 1}), {"equipment_id": equipment_id}),
-        sess.update(RecordState({
+        sess.update(Equipment(interface({"service_state": 1})), {"equipment_id": equipment_id}),
+        sess.update(RecordState(interface({
             "user_id": user_id,
             "status": 'RECORD'
-        }), {"equipment_id": equipment_id})
+        })), {"equipment_id": equipment_id})
     )
     sess.commit()
 
-    return dto.response(200, data=res.data)
+    return res.response(200, "OK")
 
 
-def get_record_state(dto, res):
-    user_id = dto.user_id
-    user = findById(User(), user_id)
+def get_record_state(req, res, interface):
+    user_id = req.user_id
+    user = User.find_by_id(user_id)
     
-    equipment_id = dto.equipment_id
-    record_state = findById(RecordState, equipment_id)
+    equipment_id = req.equipment_id
+    record_state = RecordState.find_by_id(equipment_id)
 
     if not user or user.user_id != record_state.user_id:
-        return dto.response(403, "NOT_VALID_ACCESS")
+        return req.response(403, "NOT_VALID_ACCESS")
     
-    res.add(record_state.status)
-    return dto.response(200, data=res.data)
+    res.add(interface({"record_status": record_state.status.get()}))
+    return res.response(200, "OK")

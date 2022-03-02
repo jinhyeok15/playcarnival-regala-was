@@ -11,11 +11,13 @@ def record_regala(equipment_id):
     req_body = request.get_json()
     dto = RecordRegalaDto(equipment_id, req_body)
     res = ResponseEntity("request")
-    return asyncio.run(record.record_regala(dto, res))
+    interface = DataInterface
+    return asyncio.run(record.record_regala(dto, res, interface))
 
 @bp.route('/<int:equipment_id>/state', methods=['POST'])
 def get_record_state(equipment_id):
     req_body = request.get_json()
     dto = RecordRegalaDto(equipment_id, req_body)
     res = ResponseEntity("recordStatus")
-    return record.get_record_state(dto, res)
+    interface = DataInterface
+    return record.get_record_state(dto, res, interface)

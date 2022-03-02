@@ -1,36 +1,45 @@
 from flask import jsonify
 
+class DTO:
+    def __init__(self, data={}):
+        self.data = data
+    
+    def push(self, data):
+        self.data = data
+
+
 class ResponseEntity:
     def __init__(self, res_name='data', many=False):
-        self.data = [{}] if many else {}
+        self.res_data = [] if many else None
         self.res_name = res_name
         self.many = many
         self.cursor = 0
     
-    def push(self, data):
-        self.data = data
-    
-    def add(self, field):
+    def add(self, dto):
         if self.many:
-            self.data[self.cursor].update(dict([field.attr]))
+            self.res_data.append(dto.data)
         else:
-            self.data.update(dict([field.attr]))
+            self.res_data = dto.data
+    
+    def addall(self, dto_data):
+        self.res_data = [dto.data for dto in dto_data] if self.many else None
 
-    def response(self, code: int, message=None, data=None):
+    def response(self, code: int, message=None):
         res_body = {"status": code}
         if message:
             res_body["message"] = message
-        if data:
-            res_body.update({self.res_name: data})
+        if self.res_data:
+            res_body.update({self.res_name: self.res_data})
         return jsonify(res_body)
-    
-    def next(self):
-        self.data.append({})
-        self.cursor += 1
+
+
+class DataInterface(DTO):
+    __name__ = 'DTO'
 
 
 # record
-class RecordRegalaDto(ResponseEntity):
+class RecordRegalaDto(DTO):
+    __name__ = 'DTO'
     def __init__(self, equipment_id: int, req_body):
         super().__init__()
         self.equipment_id = equipment_id
