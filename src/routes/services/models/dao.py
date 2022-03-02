@@ -1,5 +1,7 @@
-import config
+from . import config
 import pymysql
+from .record import *
+from .user import *
 
 
 db_config = config.db
@@ -11,47 +13,66 @@ db = pymysql.connect(
     charset='utf8'
 )
 
-def connect(func):
-    def wrapper(model: object, *args, **kwargs):
+
+def connection(func):
+    def wrapper(model, *args, **kwargs):
         try:
             with db.cursor(pymysql.cursors.DictCursor) as cur:
-                func(model, *args, cursor=cur, **kwargs)
+                obj = func(model, *args, cursor=cur, **kwargs)
         finally:
             cur.close()
+        return obj
     return wrapper
 
-@connect
-async def findById(model, id, cursor=None):
+
+@connection
+def findById(model, id, cursor=None):
+    print(model())
     id_attr = _get_id_attr(model, model.__names__)
     q = '''
         SELECT * FROM {} WHERE {}={};
-    '''.format(_get_table_name(model.__name__), id_attr[0], id)
-    cursor.execute(q)
-    return model.set_data(cursor.fetchone())
+    '''.format(_get_table_name(model.__name__), id_attr[0], id if isinstance(id, int) else f"'{id}'")
 
-@connect
-async def find(model, filter, only=False, cursor=None):
+    cursor.execute(q)
+    data = cursor.fetchone()
+    try:
+        ins = model().set_instance(data)
+        return ins
+    except:
+        return None
+
+
+@connection
+def find(model, filter, only=False, cursor=None):
     q = "SELECT * FROM {} ".format(_get_table_name(model.__name__))
     if filter:
-        q += 'WHERE '+', '.join([f"{k}={v}" for k, v in filter.items()])+";"
+        q += 'WHERE '+', '.join([f"{k}={v}" if isinstance(v, int) else f"{k}='{v}'" for k, v in filter.items()])+";"
     cursor.execute(q)
     if only:
-        return model.set_data(cursor.fetchone())
-    return [model.set_data(x) for x in cursor.fetchall()]
+        ins = model().set_instance(cursor.fetchone())
+        return ins
+    result=[]
+    for x in cursor.fetchall():
+        ins = model().set_instance(x)
+        result.append(ins)
+    return result
 
-@connect
-async def update(self, model: object, filter, cursor=None):
+
+@connection
+def update(model: object, filter, cursor=None):
     q = 'UPDATE {} SET '.format(_get_table_name(model.__name__))
-    q += ', '.join([f"{k}={v}" for k, v in model.data.items()])+"\n"
-    q += 'WHERE '+', '.join([f"{k}={v}" for k, v in filter.items()])+";"
+    q += ', '.join([f"{k}={v}" if isinstance(v, int) else f"{k}='{v}'" for k, v in model.data.items()])+"\n"
+    q += 'WHERE '+', '.join([f"{k}={v}" if isinstance(v, int) else f"{k}='{v}'" for k, v in filter.items()])+";"
     cursor.execute(q)
 
-@connect
-async def create(self, model: object, cursor=None):
+
+@connection
+def create(model: object, cursor=None):
     q = 'INSERT INTO {}'.format(_get_table_name(model.__name__))
     q += '('+', '.join([name for name in model.data.keys()])+')\n'
-    q += 'VALUES ('+', '.join([value for value in model.data.values()])+');'
+    q += 'VALUES ('+', '.join([value if isinstance(value, int) else f"'{value}'" for value in model.data.values()])+');'
     cursor.execute(q)
+
 
 class SQLSession:
     def __init__(self):
@@ -67,14 +88,14 @@ class SQLSession:
     
     async def update(self, model: object, filter):
         q = 'UPDATE {} SET '.format(_get_table_name(model.__name__))
-        q += ', '.join([f"{k}={v}" for k, v in model.data.items()])+"\n"
-        q += 'WHERE '+', '.join([f"{k}={v}" for k, v in filter.items()])+";"
+        q += ', '.join([f"{k}={v}" if isinstance(v, int) else f"{k}='{v}'" for k, v in model.data.items()])+"\n"
+        q += 'WHERE '+', '.join([f"{k}={v}" if isinstance(v, int) else f"{k}='{v}'" for k, v in filter.items()])+";"
         self.cur.execute(q)
     
     async def create(self, model: object):
         q = 'INSERT INTO {}'.format(_get_table_name(model.__name__))
         q += '('+', '.join([name for name in model.data.keys()])+')\n'
-        q += 'VALUES ('+', '.join([value for value in model.data.values()])+');'
+        q += 'VALUES ('+', '.join([value if isinstance(value, int) else f"'{value}'" for value in model.data.values()])+');'
         self.cur.execute(q)
 
     def commit(self):
@@ -90,6 +111,7 @@ def _get_table_name(class_name):
         if tmp[i].isupper():
             tmp[i] = "_"+tmp[i].lower()
     return "".join(tmp)
+
 
 def _get_id_attr(model, names):
     for name in names:

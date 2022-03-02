@@ -1,10 +1,10 @@
 # pymysql 설정
 db = {
-    'user': 'user',
-    'password': 'password',
-    'host': 'db-host',
+    'user': 'fever',
+    'password': 'fever1234',
+    'host': 'feverdb.cy76xlw8fwhe.ap-northeast-2.rds.amazonaws.com',
     'port': '3306',
-    'database': 'db'
+    'database': 'playcanival'
 }
 
 # REDIS pubsub 설정
