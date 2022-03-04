@@ -9,6 +9,7 @@ import asyncio
 red = getRedis()
 
 async def record_regala(req, res, interface):
+    itf = interface()
     user_id = req.user_id
     user = User.find_by_id(user_id)
     if not user:
@@ -20,20 +21,21 @@ async def record_regala(req, res, interface):
         return res.response(404, "UNREGISTERED_EQUIPMENT")
 
     stadium = Stadium.find_by_id(equipment.get("stadium_id"))
-    
-    res.add(interface({"user_id": user_id}))
-    res.add(interface({"equipment_id": equipment_id}))
-    res.add(interface({"stadium_name": stadium.get("name")}))
+
+    itf.push({"user_id": user_id})
+    itf.add({"equipment_id": equipment_id})
+    itf.add({"stadium_name": stadium.get("name")})
+    res.add(itf)
 
     red.publish('regalaData', json.dumps(res.res_data))
 
     sess = SQLSession()
     await asyncio.gather(
-        sess.update(Equipment(interface({"service_state": 1})), {"equipment_id": equipment_id}),
-        sess.update(RecordState(interface({
+        sess.update(Equipment(itf.push({"service_state": 1})), itf.push({"equipment_id": equipment_id})),
+        sess.update(RecordState(itf.push({
             "user_id": user_id,
             "status": 'RECORD'
-        })), {"equipment_id": equipment_id})
+        })), itf.push({"equipment_id": equipment_id}))
     )
     sess.commit()
 
@@ -41,6 +43,7 @@ async def record_regala(req, res, interface):
 
 
 def get_record_state(req, res, interface):
+    itf = interface()
     user_id = req.user_id
     user = User.find_by_id(user_id)
     
@@ -50,5 +53,6 @@ def get_record_state(req, res, interface):
     if not user or user.user_id != record_state.user_id:
         return req.response(403, "NOT_VALID_ACCESS")
     
-    res.add(interface({"record_status": record_state.status.get()}))
+    itf.push({"record_status": record_state.status.get()})
+    res.add(itf)
     return res.response(200, "OK")

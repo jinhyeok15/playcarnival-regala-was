@@ -6,11 +6,15 @@ class DTO:
     
     def push(self, data):
         self.data = data
+        return self
+    
+    def add(self, data):
+        self.data.update(data)
 
 
 class ResponseEntity:
     def __init__(self, res_name='data', many=False):
-        self.res_data = [] if many else None
+        self.res_data = [] if many else {}
         self.res_name = res_name
         self.many = many
         self.cursor = 0
@@ -19,7 +23,7 @@ class ResponseEntity:
         if self.many:
             self.res_data.append(dto.data)
         else:
-            self.res_data = dto.data
+            self.res_data.update(dto.data)
     
     def addall(self, dto_data):
         self.res_data = [dto.data for dto in dto_data] if self.many else None

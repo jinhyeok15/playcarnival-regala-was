@@ -1,5 +1,6 @@
 from datetime import datetime
-from msilib.schema import Error
+
+from pymysql import DatabaseError
 
 from . import dao
 
@@ -34,9 +35,9 @@ class Model:
             coltype = eval(f'self.{name}.column_type.__name__')
             if name in dto_data:
                 value = dto_data[name]
+                self.data[colname] = value
                 value = f"'''{value}'''"
                 eval('self.{}.put(self._string_to({}, {}))'.format(name, value, coltype))
-                self.data[colname] = value
                 tmp.append(name)
         self.__names__ = tmp
     
@@ -93,7 +94,7 @@ class Model:
         try:
             dao.update(cls, filter)
             return 1
-        except Error as e:
+        except DatabaseError as e:
             print("DB update error: ", e)
             return 0
     
@@ -102,6 +103,6 @@ class Model:
         try:
             dao.create(cls)
             return 1
-        except Error as e:
+        except DatabaseError as e:
             print("DB create error: ", e)
             return 0

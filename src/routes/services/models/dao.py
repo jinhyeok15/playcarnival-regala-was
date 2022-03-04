@@ -12,21 +12,21 @@ db = pymysql.connect(
 
 
 def connection(func):
-    def wrapper(model, *args, **kwargs):
+    def wrapper(modelcls, *args, **kwargs):
         try:
             with db.cursor(pymysql.cursors.DictCursor) as cur:
-                return func(model, *args, cursor=cur, **kwargs)
+                return func(modelcls, *args, cursor=cur, **kwargs)
         finally:
             cur.close()
     return wrapper
 
 
 @connection
-def findById(model, id, cursor=None):
-    id_attr = _get_id_attr(model, model.__names__)
+def findById(modelcls, id, cursor=None):
+    id_attr = _get_id_attr(modelcls, modelcls.__names__)
     q = '''
         SELECT * FROM {} WHERE {}={};
-    '''.format(_get_table_name(model.__name__), id_attr[0], id if isinstance(id, int) else f"'{id}'")
+    '''.format(_get_table_name(modelcls.__name__), id_attr[0], id if isinstance(id, int) else f"'{id}'")
 
     cursor.execute(q)
     try:
@@ -36,8 +36,8 @@ def findById(model, id, cursor=None):
 
 
 @connection
-def find(model, filter, cursor=None):
-    q = "SELECT * FROM {} ".format(_get_table_name(model.__name__))
+def find(modelcls, filter, cursor=None):
+    q = "SELECT * FROM {} ".format(_get_table_name(modelcls.__name__))
     if filter:
         q += 'WHERE '+', '.join([f"{k}={v}" if isinstance(v, int) else f"{k}='{v}'" for k, v in filter.items()])+";"
     cursor.execute(q)
@@ -45,8 +45,8 @@ def find(model, filter, cursor=None):
 
 
 @connection
-def findOne(model, filter, cursor=None):
-    q = "SELECT * FROM {} ".format(_get_table_name(model.__name__))
+def findOne(modelcls, filter, cursor=None):
+    q = "SELECT * FROM {} ".format(_get_table_name(modelcls.__name__))
     q += 'WHERE '+', '.join([f"{k}={v}" if isinstance(v, int) else f"{k}='{v}'" for k, v in filter.items()])+';'
     cursor.execute(q)
     return cursor.fetchone()
@@ -54,16 +54,16 @@ def findOne(model, filter, cursor=None):
 
 @connection
 def update(model, filter, cursor=None):
-    q = 'UPDATE {} SET '.format(_get_table_name(model.__name__))
-    q += ', '.join([f"{k}={v}" if isinstance(v, int) else f"{k}='{v}'" for k, v in model.data.items()])+"\n"
-    q += 'WHERE '+', '.join([f"{k}={v}" if isinstance(v, int) else f"{k}='{v}'" for k, v in filter.items()])+";"
+    q = 'UPDATE {} SET '.format(_get_table_name(model.__class__.__name__))
+    q += ', '.join([f"{k}={v}" if isinstance(v, int) else f"{k}='{v}'" for k, v in model.data.items()])+" "
+    q += 'WHERE '+', '.join([f"{k}={v}" if isinstance(v, int) else f"{k}='{v}'" for k, v in _get_filter_items(model, filter)])+";"
     cursor.execute(q)
 
 
 @connection
 def create(model, cursor=None):
-    q = 'INSERT INTO {}'.format(_get_table_name(model.__name__))
-    q += '('+', '.join([name for name in model.data.keys()])+')\n'
+    q = 'INSERT INTO {}'.format(_get_table_name(model.__class__.__name__))
+    q += '('+', '.join([name for name in model.data.keys()])+') '
     q += 'VALUES ('+', '.join([value if isinstance(value, int) else f"'{value}'" for value in model.data.values()])+');'
     cursor.execute(q)
 
@@ -81,14 +81,14 @@ class SQLSession:
         self.cur = self.db.cursor(pymysql.cursors.DictCursor)
     
     async def update(self, model, filter):
-        q = 'UPDATE {} SET '.format(_get_table_name(model.__name__))
-        q += ', '.join([f"{k}={v}" if isinstance(v, int) else f"{k}='{v}'" for k, v in model.data.items()])+"\n"
-        q += 'WHERE '+', '.join([f"{k}={v}" if isinstance(v, int) else f"{k}='{v}'" for k, v in filter.items()])+";"
+        q = 'UPDATE {} SET '.format(_get_table_name(model.__class__.__name__))
+        q += ', '.join([f"{k}={v}" if isinstance(v, int) else f"{k}='{v}'" for k, v in model.data.items()])+" "
+        q += 'WHERE '+', '.join([f"{k}={v}" if isinstance(v, int) else f"{k}='{v}'" for k, v in _get_filter_items(model, filter)])+";"
         self.cur.execute(q)
     
     async def create(self, model):
-        q = 'INSERT INTO {}'.format(_get_table_name(model.__name__))
-        q += '('+', '.join([name for name in model.data.keys()])+')\n'
+        q = 'INSERT INTO {}'.format(_get_table_name(model.__class__.__name__))
+        q += '('+', '.join([name for name in model.data.keys()])+') '
         q += 'VALUES ('+', '.join([value if isinstance(value, int) else f"'{value}'" for value in model.data.values()])+');'
         self.cur.execute(q)
 
@@ -107,8 +107,17 @@ def _get_table_name(class_name):
     return "".join(tmp)
 
 
-def _get_id_attr(model, names):
+def _get_id_attr(modelcls, names):
     for name in names:
-        if eval(f'model.{name}.is_id'):
-            return eval(f'model.{name}.attr')
+        if eval(f'modelcls.{name}.is_id'):
+            return eval(f'modelcls.{name}.attr')
     raise Exception("ID not found")
+
+def _get_filter_items(model, filter):
+    names = model.__class__.__names__
+    items = []
+    for name in names:
+        if name in filter.data:
+            colname = eval(f"model.{name}.column_name")
+            items.append((colname, filter.data[name]))
+    return items

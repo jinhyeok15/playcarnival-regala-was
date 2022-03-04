@@ -45,6 +45,11 @@ class TestDTO(unittest.TestCase):
     def test_dto_interface(self):
         self.assertEqual(dto.DataInterface().__name__, 'DTO')
         self.assertEqual(type(dict()).__name__, 'dict')
+    
+    def test_dto_push(self):
+        itf = dto.DataInterface()
+        itf.push({"user_id": 1})
+        self.assertEqual(itf.data, {"user_id": 1})
 
 
 def suite():
@@ -53,7 +58,8 @@ def suite():
     # suite.addTest(TestModel('test_dict_in'))
     # suite.addTest(TestModel('test_column'))
     # suite.addTest(TestModel('test_get_column_name'))
-    suite.addTest(TestModel('test_datetime_instance'))
+    # suite.addTest(TestModel('test_datetime_instance'))
+    suite.addTest(TestDTO('test_dto_push'))
     return suite
 
 if __name__=="__main__":
