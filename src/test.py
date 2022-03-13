@@ -1,5 +1,5 @@
 from routes.services import models
-from routes.services.models import record, user
+from routes.services.models import record_model, user_model
 import unittest
 import datetime
 from routes import dto
@@ -24,18 +24,18 @@ class TestModel(unittest.TestCase):
     
     def test_column(self):
         interface = dto.DataInterface({"user_id": 1})
-        u =  user.User(interface)
+        u =  user_model.User(interface)
         self.assertEqual(u.get("user_id"), 1)
         self.assertEqual(u.user_id.attr, ("user_idx", 1))
     
     def test_get_column_name(self):
         interface = dto.DataInterface({"user_id": 1})
-        u =  user.User(interface)
+        u =  user_model.User(interface)
         self.assertEqual(u.user_id.__class__.__name__, "Column")
     
     def test_datetime_instance(self):
         interface = dto.DataInterface({"user_id": 1})
-        u =  user.User(interface)
+        u =  user_model.User(interface)
         print(u.created_at.column_type)
         self.assertTrue(u.created_at.column_type==u.time)
         self.assertEqual(u.created_at.column_type, u.time)

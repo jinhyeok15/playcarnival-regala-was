@@ -1,6 +1,6 @@
 import json
-from .models.record import *
-from .models.user import *
+from .models.record_model import *
+from .models.user_model import *
 from .models.dao import *
 
 from ._redis import getRedis
