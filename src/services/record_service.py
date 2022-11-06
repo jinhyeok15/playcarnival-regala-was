@@ -11,7 +11,7 @@ from models.database import (
     SQLSession
 )
 
-from ._redis import getRedis
+from _redis import getRedis
 import asyncio
 
 red = getRedis()

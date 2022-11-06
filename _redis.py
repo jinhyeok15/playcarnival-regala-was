@@ -1,5 +1,7 @@
-from models import config
+import models.config as config
+
 import redis
+
 
 def getRedis():
     setting = config.REDIS

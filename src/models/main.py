@@ -2,7 +2,14 @@ from datetime import datetime
 
 from pymysql import DatabaseError
 
-from . import dao
+from database import (
+    get_data_by_id,
+    fetch_data,
+    get_data,
+    update,
+    create
+)
+
 
 class Model:
     time = datetime
@@ -76,23 +83,23 @@ class Model:
     
     @classmethod
     def find_by_id(cls, id):
-        dto_data = dao.get_data_by_id(cls, id)
+        dto_data = get_data_by_id(cls, id)
         return cls(dto_data)
     
     @classmethod
     def find(cls, filter):
-        dto_data = dao.fetch_data(cls, filter)
+        dto_data = fetch_data(cls, filter)
         return [cls(entity) for entity in dto_data]
     
     @classmethod
     def find_one(cls, filter):
-        dto_data = dao.get_data(cls, filter)
+        dto_data = get_data(cls, filter)
         return cls(dto_data)
     
     @classmethod
     def update(cls, filter):
         try:
-            dao.update(cls, filter)
+            update(cls, filter)
             return 1
         except DatabaseError as e:
             print("DB update error: ", e)
@@ -101,7 +108,7 @@ class Model:
     @classmethod
     def create(cls):
         try:
-            dao.create(cls)
+            create(cls)
             return 1
         except DatabaseError as e:
             print("DB create error: ", e)
