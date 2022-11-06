@@ -1,4 +1,4 @@
-from .models import config
+from models import config
 import redis
 
 def getRedis():

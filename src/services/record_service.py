@@ -1,14 +1,22 @@
 import json
-from .models.record_model import *
-from .models.user_model import *
-from .models.dao import *
+from models.record_model import (
+    Equipment,
+    Stadium,
+    RecordState
+)
+from models.user_model import (
+    User,
+)
+from models.database import (
+    SQLSession
+)
 
 from ._redis import getRedis
 import asyncio
 
 red = getRedis()
 
-async def record_regala(req, res, interface):
+async def record_regala_service(req, res, interface):
     itf = interface()
     user_id = req.user_id
     user = User.find_by_id(user_id)
@@ -42,7 +50,7 @@ async def record_regala(req, res, interface):
     return res.response(200, "OK")
 
 
-def get_record_state(req, res, interface):
+def get_record_state_service(req, res, interface):
     itf = interface()
     user_id = req.user_id
     user = User.find_by_id(user_id)

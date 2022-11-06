@@ -1,10 +1,10 @@
-from manage import getRedis, DAO
+from manage import getRedis, Dao
 
 from multiprocessing import Process
 import json
 
 redis_conn= getRedis()
-dao = DAO()
+dao = Dao()
 
 def sub():
     pubsub = redis_conn.pubsub()

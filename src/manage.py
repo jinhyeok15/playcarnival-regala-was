@@ -1,8 +1,8 @@
-import routes.services.models.config as config
+import models.config as config
 import redis
 import pymysql
 
-class DAO:
+class Dao:
     def __init__(self):
         db_config = config.db
         self.db = pymysql.connect(

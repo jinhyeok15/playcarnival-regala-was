@@ -76,17 +76,17 @@ class Model:
     
     @classmethod
     def find_by_id(cls, id):
-        dto_data = dao.findById(cls, id)
+        dto_data = dao.get_data_by_id(cls, id)
         return cls(dto_data)
     
     @classmethod
     def find(cls, filter):
-        dto_data = dao.find(cls, filter)
+        dto_data = dao.fetch_data(cls, filter)
         return [cls(entity) for entity in dto_data]
     
     @classmethod
     def find_one(cls, filter):
-        dto_data = dao.findOne(cls, filter)
+        dto_data = dao.get_data(cls, filter)
         return cls(dto_data)
     
     @classmethod

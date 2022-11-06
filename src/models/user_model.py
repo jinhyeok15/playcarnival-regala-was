@@ -1,4 +1,4 @@
-from .. import models
+import models
 
 class User(models.Model):
     def __init__(self, data=None):

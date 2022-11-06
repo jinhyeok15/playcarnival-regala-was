@@ -1,5 +1,4 @@
-from routes.services import models
-from routes.services.models import record_model, user_model
+from models import record_model, user_model
 import unittest
 import datetime
 from routes import dto

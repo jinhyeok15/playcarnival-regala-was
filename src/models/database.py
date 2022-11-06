@@ -22,7 +22,7 @@ def connection(func):
 
 
 @connection
-def findById(modelcls, id, cursor=None):
+def get_data_by_id(modelcls, id, cursor=None):
     id_attr = _get_id_attr(modelcls, modelcls.__names__)
     q = '''
         SELECT * FROM {} WHERE {}={};
@@ -36,7 +36,7 @@ def findById(modelcls, id, cursor=None):
 
 
 @connection
-def find(modelcls, filter, cursor=None):
+def fetch_data(modelcls, filter, cursor=None):
     q = "SELECT * FROM {} ".format(_get_table_name(modelcls.__name__))
     if filter:
         q += 'WHERE '+', '.join([f"{k}={v}" if isinstance(v, int) else f"{k}='{v}'" for k, v in filter.items()])+";"
@@ -45,7 +45,7 @@ def find(modelcls, filter, cursor=None):
 
 
 @connection
-def findOne(modelcls, filter, cursor=None):
+def get_data(modelcls, filter, cursor=None):
     q = "SELECT * FROM {} ".format(_get_table_name(modelcls.__name__))
     q += 'WHERE '+', '.join([f"{k}={v}" if isinstance(v, int) else f"{k}='{v}'" for k, v in filter.items()])+';'
     cursor.execute(q)
