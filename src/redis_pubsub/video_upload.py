@@ -1,12 +1,14 @@
-from manage import getRedis, Dao
+from manage import get_redis, Dao
+
+from .topics import PLAY_CAMERA, UPLOAD_URL_TO_DB
 
 from multiprocessing import Process
 import json
+import time
 
-redis_conn= getRedis()
+redis_conn= get_redis()
 dao = Dao()
 
-import time
 # rtsp_test.func()
 def rtsp_func():
     time.sleep(3)
@@ -27,13 +29,13 @@ def upload_func(data):
     url = f"www.placarnival.com/regala/google_drive/서경대 Futsal Park 2021.12.15 16:5815.mp4"
     data.update({"url": url})
     # publish 달면, videosub.py에서 subscribe해서 url db에 저장할 수 있습니다
-    redis_conn.publish("video", json.dumps(data))  # publish title: video -> videosub.py subscribe
+    redis_conn.publish(UPLOAD_URL_TO_DB, json.dumps(data))  # publish title: video -> videosub.py subscribe
     print(f'upload success, close session.')
 
 
 def sub():
     pubsub = redis_conn.pubsub()
-    pubsub.subscribe("regalaData")  # subscribe 제목: app.py에서 publish할 때 사용한 title=regalaData
+    pubsub.subscribe(PLAY_CAMERA)  # subscribe 제목: app.py에서 publish할 때 사용한 title=regalaData
     for message in pubsub.listen():
         if message.get("type") == "message":
             data = message.get("data")

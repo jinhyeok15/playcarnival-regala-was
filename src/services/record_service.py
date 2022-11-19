@@ -1,4 +1,4 @@
-import json
+# models
 from models.record_model import (
     Equipment,
     Stadium,
@@ -11,13 +11,21 @@ from models.database import (
     SQLSession
 )
 
-from _redis import getRedis
+# management
+from manage import get_redis
+
+# constants
+from redis_pubsub.topics import PLAY_CAMERA
+
+# python modules
+import json
 import asyncio
 
-red = getRedis()
+redis_conn = get_redis()
 
 async def record_regala_service(req, res, interface):
-    itf = interface()
+    data_obj = interface()
+
     user_id = req.user_id
     user = User.find_by_id(user_id)
     if not user:
@@ -30,28 +38,33 @@ async def record_regala_service(req, res, interface):
 
     stadium = Stadium.find_by_id(equipment.get("stadium_id"))
 
-    itf.push({"user_id": user_id})
-    itf.add({"equipment_id": equipment_id})
-    itf.add({"stadium_name": stadium.get("name")})
-    res.add(itf)
+    data_obj.call({
+        "user_id": user_id,
+        "equipment_id": equipment_id,
+        "stadium_name": stadium.get("name")
+    })
+    
+    res.add(data_obj)
 
-    red.publish('regalaData', json.dumps(res.res_data))
+    redis_conn.publish(PLAY_CAMERA, json.dumps(res.res_data))
 
+    # transaction
     sess = SQLSession()
     await asyncio.gather(
-        sess.update(Equipment(itf.push({"service_state": 1})), itf.push({"equipment_id": equipment_id})),
-        sess.update(RecordState(itf.push({
+        sess.update(Equipment(data_obj.call({"service_state": 1})), data_obj.call({"equipment_id": equipment_id})),
+        sess.update(RecordState(data_obj.call({
             "user_id": user_id,
             "status": 'RECORD'
-        })), itf.push({"equipment_id": equipment_id}))
+        })), data_obj.call({"equipment_id": equipment_id}))
     )
     sess.commit()
 
     return res.response(200, "OK")
 
 
-def get_record_state_service(req, res, interface):
-    itf = interface()
+def find_record_state_service(req, res, interface):
+    data_obj = interface()
+
     user_id = req.user_id
     user = User.find_by_id(user_id)
     
@@ -61,6 +74,6 @@ def get_record_state_service(req, res, interface):
     if not user or user.user_id != record_state.user_id:
         return req.response(403, "NOT_VALID_ACCESS")
     
-    itf.push({"record_status": record_state.status.get()})
-    res.add(itf)
+    data_obj.call({"record_status": record_state.status.get()})
+    res.add(data_obj)
     return res.response(200, "OK")

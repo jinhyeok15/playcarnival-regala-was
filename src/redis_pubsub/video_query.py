@@ -1,14 +1,16 @@
-from manage import getRedis, Dao
+from manage import get_redis, Dao
+
+from .topics import UPLOAD_URL_TO_DB
 
 from multiprocessing import Process
 import json
 
-redis_conn= getRedis()
+redis_conn= get_redis()
 dao = Dao()
 
 def sub():
     pubsub = redis_conn.pubsub()
-    pubsub.subscribe("video")
+    pubsub.subscribe(UPLOAD_URL_TO_DB)
     for message in pubsub.listen():
         if message.get("type") == "message":
             data = json.loads(message.get("data"))

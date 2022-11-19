@@ -2,7 +2,7 @@ from datetime import datetime
 
 from pymysql import DatabaseError
 
-from database import (
+from .database import (
     get_data_by_id,
     fetch_data,
     get_data,

@@ -1,7 +1,7 @@
 from models import record_model, user_model
 import unittest
 import datetime
-from routes import dto
+from routes.http import DataInterface
 
 class TestModel(unittest.TestCase):
     equipment_data = {
@@ -22,18 +22,18 @@ class TestModel(unittest.TestCase):
         self.assertFalse(names[1] in d)
     
     def test_column(self):
-        interface = dto.DataInterface({"user_id": 1})
+        interface = DataInterface({"user_id": 1})
         u =  user_model.User(interface)
         self.assertEqual(u.get("user_id"), 1)
         self.assertEqual(u.user_id.attr, ("user_idx", 1))
     
     def test_get_column_name(self):
-        interface = dto.DataInterface({"user_id": 1})
+        interface = DataInterface({"user_id": 1})
         u =  user_model.User(interface)
         self.assertEqual(u.user_id.__class__.__name__, "Column")
     
     def test_datetime_instance(self):
-        interface = dto.DataInterface({"user_id": 1})
+        interface = DataInterface({"user_id": 1})
         u =  user_model.User(interface)
         print(u.created_at.column_type)
         self.assertTrue(u.created_at.column_type==u.time)
@@ -42,13 +42,13 @@ class TestModel(unittest.TestCase):
 
 class TestDTO(unittest.TestCase):
     def test_dto_interface(self):
-        self.assertEqual(dto.DataInterface().__name__, 'DTO')
+        self.assertEqual(DataInterface().__name__, 'DTO')
         self.assertEqual(type(dict()).__name__, 'dict')
     
     def test_dto_push(self):
-        itf = dto.DataInterface()
-        itf.push({"user_id": 1})
-        self.assertEqual(itf.data, {"user_id": 1})
+        itf = DataInterface()
+        itf.call({"user_id": 1})
+        self.assertEqual(itf.__data, {"user_id": 1})
 
 
 def suite():

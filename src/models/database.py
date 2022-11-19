@@ -1,12 +1,11 @@
-from . import config
+from configs import DB_CONFIG
 import pymysql
 
-db_config = config.db
 db = pymysql.connect(
-    user=db_config['user'],
-    passwd=db_config['password'],
-    host=db_config['host'],
-    db=db_config['database'],
+    user=DB_CONFIG['user'],
+    passwd=DB_CONFIG['password'],
+    host=DB_CONFIG['host'],
+    db=DB_CONFIG['database'],
     charset='utf8'
 )
 
@@ -70,12 +69,11 @@ def create(model, cursor=None):
 
 class SQLSession:
     def __init__(self):
-        db_config = config.db
         self.db = pymysql.connect(
-            user=db_config['user'],
-            passwd=db_config['password'],
-            host=db_config['host'],
-            db=db_config['database'],
+            user=DB_CONFIG['user'],
+            passwd=DB_CONFIG['password'],
+            host=DB_CONFIG['host'],
+            db=DB_CONFIG['database'],
             charset='utf8'
         )
         self.cur = self.db.cursor(pymysql.cursors.DictCursor)
@@ -125,12 +123,11 @@ def _get_filter_items(model, filter):
 
 class Dao:
     def __init__(self):
-        db_config = config.db
         self.db = pymysql.connect(
-            user=db_config['user'],
-            passwd=db_config['password'],
-            host=db_config['host'],
-            db=db_config['database'],
+            user=DB_CONFIG['user'],
+            passwd=DB_CONFIG['password'],
+            host=DB_CONFIG['host'],
+            db=DB_CONFIG['database'],
             charset='utf8'
         )
         self.cur = self.db.cursor(pymysql.cursors.DictCursor)
